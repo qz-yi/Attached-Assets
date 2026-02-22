@@ -108,6 +108,29 @@ export const api = {
         200: z.custom<typeof jobs.$inferSelect>(),
         400: errorSchemas.validation,
       }
+    },
+    reject: {
+      method: 'POST' as const,
+      path: '/api/jobs/:id/reject' as const,
+      responses: {
+        200: z.custom<typeof jobs.$inferSelect>(),
+        400: errorSchemas.validation,
+      }
+    },
+    change: {
+      method: 'POST' as const,
+      path: '/api/jobs/:id/change' as const,
+      responses: {
+        200: z.custom<typeof jobs.$inferSelect>(),
+        400: errorSchemas.validation,
+      }
+    },
+    rejectedList: {
+      method: 'GET' as const,
+      path: '/api/jobs/rejected' as const,
+      responses: {
+        200: z.array(z.custom<typeof jobs.$inferSelect>()),
+      }
     }
   },
   payments: {

@@ -178,8 +178,73 @@ export async function registerRoutes(
       return res.status(400).json({ message: "عذراً، شخص آخر سبقك بقبول الوظيفة أو الوظيفة غير متاحة" });
     }
 
-    const updated = await storage.updateJob(job.id, { status: 'accepted', acceptedByClientId: userId });
+    const updated = await storage.updateJob(job.id, { 
+      status: 'accepted', 
+      acceptedByClientId: userId,
+      acceptedAt: new Date()
+    });
     res.json(updated);
+  });
+
+  app.post(api.jobs.reject.path, async (req, res) => {
+    const userId = (req.session as any).userId;
+    if (!userId) return res.status(401).json({ message: "Not logged in" });
+
+    const job = await storage.getJob(Number(req.params.id));
+    if (!job || job.employerId !== userId) return res.status(404).json({ message: "Job not found" });
+
+    if (!job.acceptedByClientId) return res.status(400).json({ message: "No worker to reject" });
+
+    // Track rejection for the worker
+    await storage.addRejection(job.id, job.acceptedByClientId, userId);
+
+    const newRejectionCount = (job.rejection_count || 0) + 1;
+    
+    // Reset job to published
+    await storage.updateJob(job.id, {
+      status: 'published',
+      acceptedByClientId: null,
+      acceptedAt: null,
+      rejection_count: newRejectionCount
+    });
+
+    res.json({ message: "Worker rejected and job republished" });
+  });
+
+  app.post(api.jobs.change.path, async (req, res) => {
+    const userId = (req.session as any).userId;
+    if (!userId) return res.status(401).json({ message: "Not logged in" });
+
+    const job = await storage.getJob(Number(req.params.id));
+    if (!job || job.acceptedByClientId !== userId) return res.status(404).json({ message: "Job not found" });
+
+    // Check 24 hour limit
+    if (job.acceptedAt) {
+      const now = new Date();
+      const acceptedAt = new Date(job.acceptedAt);
+      const diffHours = (now.getTime() - acceptedAt.getTime()) / (1000 * 60 * 60);
+      if (diffHours > 24) {
+        return res.status(400).json({ message: "انتهت فترة تغيير الوظيفة المجانية (24 ساعة)" });
+      }
+    }
+
+    const newChangeCount = (job.changeCount || 0) + 1;
+
+    await storage.updateJob(job.id, {
+      status: 'published',
+      acceptedByClientId: null,
+      acceptedAt: null,
+      changeCount: newChangeCount
+    });
+
+    res.json({ message: "Job changed successfully" });
+  });
+
+  app.get(api.jobs.rejectedList.path, async (req, res) => {
+    const userId = (req.session as any).userId;
+    if (!userId) return res.status(401).json({ message: "Not logged in" });
+    const rejectedJobs = await storage.getRejectedJobs(userId);
+    res.json(rejectedJobs);
   });
 
   // Mock payment
