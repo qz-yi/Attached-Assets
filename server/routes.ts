@@ -63,6 +63,10 @@ export async function registerRoutes(
       (req.session as any).userId = user.id;
       res.json(user);
     } catch (e) {
+      console.error("Login error:", e);
+      if (e instanceof z.ZodError) {
+        return res.status(400).json({ message: e.errors[0].message });
+      }
       res.status(400).json({ message: "Invalid request" });
     }
   });
@@ -73,13 +77,14 @@ export async function registerRoutes(
       
       const existing = await storage.getUserByEmail(input.email);
       if (existing) {
-        return res.status(400).json({ message: "Email already in use" });
+        return res.status(400).json({ message: "البريد الالكتروني مستخدم بالفعل" });
       }
 
       const user = await storage.createUser(input);
       (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (e) {
+      console.error("Register error:", e);
       if (e instanceof z.ZodError) {
         return res.status(400).json({ message: e.errors[0].message });
       }
