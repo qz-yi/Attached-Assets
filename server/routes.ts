@@ -47,17 +47,21 @@ export async function registerRoutes(
 
       // Normal login
       const user = await storage.getUserByEmail(email);
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (!user) {
+        return res.status(401).json({ message: "البريد الإلكتروني غير مسجل" });
+      }
+      
+      if (user.password !== password) {
+        return res.status(401).json({ message: "كلمة المرور غير صحيحة" });
       }
       
       if (!user.isActive) {
-        return res.status(401).json({ message: "Account disabled. Please contact admin." });
+        return res.status(401).json({ message: "الحساب معطل. يرجى التواصل مع الإدارة." });
       }
 
       // Ensure the user logs in with the selected role (unless they are admin)
       if (role && user.role !== role && user.role !== 'admin') {
-        return res.status(401).json({ message: "Invalid role selected" });
+        return res.status(401).json({ message: "الدور المحدد غير صحيح لهذا الحساب" });
       }
 
       (req.session as any).userId = user.id;
@@ -67,7 +71,7 @@ export async function registerRoutes(
       if (e instanceof z.ZodError) {
         return res.status(400).json({ message: e.errors[0].message });
       }
-      res.status(400).json({ message: "Invalid request" });
+      res.status(400).json({ message: "طلب غير صالح" });
     }
   });
 
@@ -88,7 +92,7 @@ export async function registerRoutes(
       if (e instanceof z.ZodError) {
         return res.status(400).json({ message: e.errors[0].message });
       }
-      res.status(400).json({ message: "Invalid request" });
+      res.status(400).json({ message: "طلب غير صالح" });
     }
   });
 
