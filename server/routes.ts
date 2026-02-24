@@ -207,14 +207,13 @@ export async function registerRoutes(
     // Track rejection for the worker
     await storage.addRejection(job.id, job.acceptedByClientId, userId);
 
-    const newRejectionCount = (job.rejection_count || 0) + 1;
+    const newRejectionCount = (job.rejectionCount || 0) + 1;
     
-    // Reset job to published
     await storage.updateJob(job.id, {
       status: 'published',
-      acceptedByClientId: null,
-      acceptedAt: null,
-      rejection_count: newRejectionCount
+      acceptedByClientId: undefined,
+      acceptedAt: undefined,
+      rejectionCount: newRejectionCount
     });
 
     res.json({ message: "Worker rejected and job republished" });
@@ -241,8 +240,8 @@ export async function registerRoutes(
 
     await storage.updateJob(job.id, {
       status: 'published',
-      acceptedByClientId: null,
-      acceptedAt: null,
+      acceptedByClientId: undefined,
+      acceptedAt: undefined,
       changeCount: newChangeCount
     });
 
